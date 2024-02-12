@@ -26,7 +26,7 @@
 #include "xeus/xkernel_configuration.hpp"
 #include "xeus/xinterpreter.hpp"
 
-#include "xeus-zmq/xserver_shell_main.hpp"
+#include "xeus-zmq/xserver_uv_shell_main.hpp"
 
 #include "pybind11/embed.h"
 #include "pybind11/pybind11.h"
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_shell_main,
+                             xeus::make_xserver_uv_shell_main,
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
         xeus::xkernel kernel(xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_shell_main,
+                             xeus::make_xserver_uv_shell_main,
                              std::move(hist),
                              nullptr,
                              xpyt::make_python_debugger,
