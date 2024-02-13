@@ -41,6 +41,8 @@ endif ()
 # Cf. https://github.com/pybind/pybind11/issues/2268
 find_package(PythonInterp ${PythonLibsNew_FIND_VERSION} REQUIRED)
 
+find_package(uvw REQUIRED)
+
 if(EMSCRIPTEN)
     # the variables PYTHON_VERSION_MAJOR and PYTHON_VERSION_MINOR
     # might be wrong for the EMSCRIPTEN case since it may contains
@@ -145,9 +147,9 @@ endif()
 set(XEUS_PYTHON_SRC
     src/xcomm.cpp
     src/xcomm.hpp
-    src/xdebugger.cpp
-    src/xdebugpy_client.hpp
-    src/xdebugpy_client.cpp
+    # src/xdebugger.cpp
+    # src/xdebugpy_client.hpp
+    # src/xdebugpy_client.cpp
     src/xdisplay.cpp
     src/xdisplay.hpp
     src/xinput.cpp
@@ -168,7 +170,7 @@ set(XEUS_PYTHON_SRC
 )
 
 set(XEUS_PYTHON_HEADERS
-    include/xeus-python/xdebugger.hpp
+    # include/xeus-python/xdebugger.hpp
     include/xeus-python/xeus_python_config.hpp
     include/xeus-python/xpaths.hpp
     include/xeus-python/xinterpreter.hpp

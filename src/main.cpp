@@ -26,7 +26,11 @@
 #include "xeus/xkernel_configuration.hpp"
 #include "xeus/xinterpreter.hpp"
 
-#include "xeus-zmq/xserver_uv_shell_main.hpp"
+#include "xeus-zmq/xserver_zmq.hpp"
+
+// REMOVE
+#define UVW_AS_LIB
+#include <uvw.hpp>
 
 #include "pybind11/embed.h"
 #include "pybind11/pybind11.h"
@@ -142,9 +146,9 @@ int main(int argc, char* argv[])
                              xeus::make_xserver_uv_shell_main,
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
-                                                       xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
-                             xpyt::make_python_debugger,
-                             debugger_config);
+                                                       xeus::make_file_logger(xeus::xlogger::content, "xeus.log")));
+                            //  xpyt::make_python_debugger,
+                            //  debugger_config);
 
         std::clog <<
             "Starting xeus-python kernel...\n\n"
@@ -161,9 +165,9 @@ int main(int argc, char* argv[])
                              std::move(interpreter),
                              xeus::make_xserver_uv_shell_main,
                              std::move(hist),
-                             nullptr,
-                             xpyt::make_python_debugger,
-                             debugger_config);
+                             nullptr);
+                            //  xpyt::make_python_debugger,
+                            //  debugger_config);
 
         const auto& config = kernel.get_config();
         std::clog <<
