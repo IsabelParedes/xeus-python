@@ -14,6 +14,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream> // REMOVE
 
 #include "nlohmann/json.hpp"
 
@@ -118,6 +119,7 @@ namespace xpyt
                                                nl::json user_expressions,
                                                bool allow_stdin)
     {
+        std::cout << "[TTT] execute_request_impl\n"; // REMOVE
         py::gil_scoped_acquire acquire;
         nl::json kernel_res;
 
@@ -181,7 +183,8 @@ namespace xpyt
             kernel_res["evalue"] = error.m_evalue;
             kernel_res["traceback"] = error.m_traceback;
         }
-
+        kernel_res["status"] = "error";
+        std::cout << "[TTT] execute_request_impl END\n"; // REMOVE
         return kernel_res;
     }
 

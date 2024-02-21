@@ -87,8 +87,23 @@ int main(int argc, char* argv[])
     xpyt::set_pythonhome();
     xpyt::print_pythonhome();
 
-    // Instanciating the Python interpreter
+    // Instantiating the Python interpreter
     py::scoped_interpreter guard;
+
+    // Instantiating the loop manually
+    py::exec(R"(
+        import asyncio
+        import uvloop
+        from uvloop.loop import libuv_get_loop_t_ptr
+
+        loop = uvloop.new_event_loop()
+        asyncio.set_event_loop(loop)
+    )");
+
+    py::object py_loop_ptr = py::eval("libuv_get_loop_t_ptr(loop)");
+    auto loop_ptr = py_loop_ptr.cast<std::shared_ptr<uvw::loop>>();
+
+    std::cout << "LOOP is alive: " << (loop_ptr->alive() ? "yes\n" : "no\n");
 
     // Setting argv
     wchar_t** argw = new wchar_t*[size_t(argc)];
@@ -135,6 +150,13 @@ int main(int argc, char* argv[])
     nl::json debugger_config;
     debugger_config["python"] = executable;
 
+    auto make_uv_server = [loop_ptr](
+        xeus::xcontext& context, const xeus::xconfiguration& config, nl::json::error_handler_t eh)
+        -> std::unique_ptr<xeus::xserver>
+    {
+        return xeus::make_xserver_uv_shell_main(context, config, eh, loop_ptr);
+    };
+
     if (!connection_filename.empty())
     {
         xeus::xconfiguration config = xeus::load_configuration(connection_filename);
@@ -143,7 +165,7 @@ int main(int argc, char* argv[])
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_uv_shell_main,
+                             &make_uv_server,
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")));
@@ -163,9 +185,8 @@ int main(int argc, char* argv[])
         xeus::xkernel kernel(xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_uv_shell_main,
-                             std::move(hist),
-                             nullptr);
+                             make_uv_server,
+                             std::move(hist));
                             //  xpyt::make_python_debugger,
                             //  debugger_config);
 
@@ -190,6 +211,9 @@ int main(int argc, char* argv[])
 
         kernel.start();
     }
+
+    // Call python to start event loop
+    py::exec("loop.run_forever()");
 
     return 0;
 }
