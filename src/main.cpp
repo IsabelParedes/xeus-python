@@ -119,8 +119,8 @@ int main(int argc, char* argv[])
     {
         throw std::runtime_error("Failed to get loop pointer");
     }
-    uvw::loop* loop = static_cast<uvw::loop*>(raw_ptr);
-    std::shared_ptr<uvw::loop> loop_ptr{loop};
+    auto uv_loop_ptr = static_cast<uv_loop_t*>(raw_ptr);
+    auto loop_ptr = uvw::loop::create(uv_loop_ptr);
 
     // std::cout << "LOOP is alive: " << (loop_ptr->alive() ? "yes\n" : "no\n");
 
