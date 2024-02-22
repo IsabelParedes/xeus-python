@@ -13,6 +13,7 @@
 #include <string>
 #include <utility>
 #include <signal.h>
+#include <functional> // std::function
 
 #ifdef __GNUC__
 #include <stdio.h>
@@ -43,6 +44,16 @@
 #include "xeus-python/xutils.hpp"
 
 namespace py = pybind11;
+
+// Global variable to hold the lambda state
+std::function<std::unique_ptr<xeus::xserver>(xeus::xcontext&, const xeus::xconfiguration&, nl::json::error_handler_t)> make_uv_server_holder;
+
+// The callback to create the server
+std::unique_ptr<xeus::xserver> make_uv_server(
+    xeus::xcontext& context, const xeus::xconfiguration& config, nl::json::error_handler_t eh)
+{
+    return make_uv_server_holder(context, config, eh);
+}
 
 
 int main(int argc, char* argv[])
@@ -90,6 +101,8 @@ int main(int argc, char* argv[])
     // Instantiating the Python interpreter
     py::scoped_interpreter guard;
 
+    py::gil_scoped_acquire acquire;
+
     // Instantiating the loop manually
     py::exec(R"(
         import asyncio
@@ -101,9 +114,15 @@ int main(int argc, char* argv[])
     )");
 
     py::object py_loop_ptr = py::eval("libuv_get_loop_t_ptr(loop)");
-    auto loop_ptr = py_loop_ptr.cast<std::shared_ptr<uvw::loop>>();
+    void* raw_ptr = PyCapsule_GetPointer(py_loop_ptr.ptr(), nullptr);
+    if (raw_ptr == nullptr)
+    {
+        throw std::runtime_error("Failed to get loop pointer");
+    }
+    uvw::loop* loop = static_cast<uvw::loop*>(raw_ptr);
+    std::shared_ptr<uvw::loop> loop_ptr{loop};
 
-    std::cout << "LOOP is alive: " << (loop_ptr->alive() ? "yes\n" : "no\n");
+    // std::cout << "LOOP is alive: " << (loop_ptr->alive() ? "yes\n" : "no\n");
 
     // Setting argv
     wchar_t** argw = new wchar_t*[size_t(argc)];
@@ -150,7 +169,8 @@ int main(int argc, char* argv[])
     nl::json debugger_config;
     debugger_config["python"] = executable;
 
-    auto make_uv_server = [loop_ptr](
+    // the global variable make_uv_server_holder is set to a lambda that captures the loop_ptr
+    make_uv_server_holder = [loop_ptr](
         xeus::xcontext& context, const xeus::xconfiguration& config, nl::json::error_handler_t eh)
         -> std::unique_ptr<xeus::xserver>
     {
@@ -165,7 +185,7 @@ int main(int argc, char* argv[])
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             &make_uv_server,
+                             make_uv_server,
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")));
