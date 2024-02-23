@@ -101,27 +101,33 @@ int main(int argc, char* argv[])
     // Instantiating the Python interpreter
     py::scoped_interpreter guard;
 
-    py::gil_scoped_acquire acquire;
+    uv_loop_t* uv_loop_ptr = nullptr;
 
-    // Instantiating the loop manually
-    py::exec(R"(
-        import asyncio
-        import uvloop
-        from uvloop.loop import libuv_get_loop_t_ptr
-
-        loop = uvloop.new_event_loop()
-        asyncio.set_event_loop(loop)
-    )");
-
-    py::object py_loop_ptr = py::eval("libuv_get_loop_t_ptr(loop)");
-    void* raw_ptr = PyCapsule_GetPointer(py_loop_ptr.ptr(), nullptr);
-    if (raw_ptr == nullptr)
     {
-        throw std::runtime_error("Failed to get loop pointer");
-    }
-    auto uv_loop_ptr = static_cast<uv_loop_t*>(raw_ptr);
-    auto loop_ptr = uvw::loop::create(uv_loop_ptr);
+        py::gil_scoped_acquire acquire;
 
+        // Instantiating the loop manually
+        py::exec(R"(
+            import asyncio
+            import uvloop
+            from uvloop.loop import libuv_get_loop_t_ptr
+
+            print("Creating uvloop event loop")
+            loop = uvloop.new_event_loop()
+            asyncio.set_event_loop(loop)
+            print("UVLOOP is alive:")
+        )");
+
+        py::object py_loop_ptr = py::eval("libuv_get_loop_t_ptr(loop)");
+        void* raw_ptr = PyCapsule_GetPointer(py_loop_ptr.ptr(), nullptr);
+        if (raw_ptr == nullptr)
+        {
+            throw std::runtime_error("Failed to get loop pointer");
+        }
+        uv_loop_ptr = static_cast<uv_loop_t*>(raw_ptr);
+    }
+
+    auto loop_ptr = uvw::loop::create(uv_loop_ptr);
     // std::cout << "LOOP is alive: " << (loop_ptr->alive() ? "yes\n" : "no\n");
 
     // Setting argv
@@ -198,6 +204,7 @@ int main(int argc, char* argv[])
             " the " + connection_filename + " file."
             << std::endl;
 
+        py::gil_scoped_release* release = new py::gil_scoped_release();
         kernel.start();
     }
     else
@@ -232,8 +239,16 @@ int main(int argc, char* argv[])
         kernel.start();
     }
 
+    std::cout << "Before the forever run\n";
+
+    // loop_ptr->run();
     // Call python to start event loop
-    py::exec("loop.run_forever()");
+    {
+        py::gil_scoped_acquire acquire;
+        py::exec("loop.run_forever()");
+    }
+
+    std::cout << "After the forever run\n";
 
     return 0;
 }
