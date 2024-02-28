@@ -22,7 +22,7 @@
 #include "xeus/xsystem.hpp"
 
 #include "pybind11/functional.h"
-
+#include "pybind11/embed.h"
 #include "pybind11_json/pybind11_json.hpp"
 
 #include "xeus-python/xinterpreter.hpp"
@@ -48,6 +48,7 @@ namespace xpyt
         : m_redirect_output_enabled{redirect_output_enabled}, m_redirect_display_enabled{redirect_display_enabled}
     {
         xeus::register_interpreter(this);
+        std::cout << "OOO interpreter\n"; // REMOVE
     }
 
     interpreter::~interpreter()
@@ -62,6 +63,8 @@ namespace xpyt
             // will need to acquire the GIL
             m_release_gil = gil_scoped_release_ptr(new py::gil_scoped_release());
         }
+
+        std::cout << "OOO configure_impl\n"; // REMOVE
 
         py::gil_scoped_acquire acquire;
 
