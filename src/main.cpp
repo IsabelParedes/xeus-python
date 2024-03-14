@@ -69,6 +69,10 @@ int main(int argc, char* argv[])
 #endif
     signal(SIGINT, xpyt::sigkill_handler);
 
+    // Configuring Python
+    PyConfig config;
+    PyConfig_InitPythonConfig(&config);
+
     // Setting Program Name
     static const std::string executable(xpyt::get_python_path());
     static const std::wstring wexecutable(executable.cbegin(), executable.cend());
@@ -80,7 +84,7 @@ int main(int argc, char* argv[])
     Py_SetProgramName(const_cast<wchar_t*>(wexecutable.c_str()));
 
     // Setting PYTHONHOME
-    xpyt::set_pythonhome();
+    xpyt::set_pythonhome(config);
     xpyt::print_pythonhome();
 
     // Instanciating the Python interpreter
